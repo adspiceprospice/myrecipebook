@@ -1,0 +1,7 @@
+{
+  "name": "Recipe AI Chef",
+  "description": "An intelligent recipe book that lets you save, manage, and interact with recipes using AI. Add recipes by typing, scanning, using a URL, an image, or even a video. Get help with shopping lists and have a real-time cooking assistant guide you.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
