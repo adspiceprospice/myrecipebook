@@ -108,7 +108,16 @@ export const generateImageForRecipe = async (title: string, description: string,
 
 const getTranscriptFromYoutubeUrl = async (url: string, log: (message: string) => void): Promise<string | null> => {
     log(`Attempting to retrieve video transcript for: ${url}`);
-    const prompt = `Please retrieve the full text transcript for the YouTube video at this URL: ${url}. Return only the verbatim transcript text. Do not add any commentary or summary. If a transcript is not available or you cannot access it, return the single word "ERROR".`;
+    const prompt = `You are a specialized AI assistant with expertise in processing YouTube video data. Your task is to find and return the full text transcript for a given YouTube video URL.
+Video URL: ${url}
+
+Instructions:
+1. Analyze the provided URL to identify the video.
+2. Use your search capabilities to find the official or auto-generated captions/transcript for this specific video.
+3. Extract the complete, verbatim text from the transcript.
+4. Return ONLY the raw text of the transcript. Do not include timestamps, summaries, introductions, or any other conversational text.
+5. If you successfully find the transcript, provide only the text.
+6. If after a thorough search you cannot find any transcript or captions for this video, you MUST return the single word: "ERROR". Do not explain why or apologize.`;
 
     try {
         const response = await ai.models.generateContent({
@@ -116,10 +125,13 @@ const getTranscriptFromYoutubeUrl = async (url: string, log: (message: string) =
             contents: prompt,
             config: { tools: [{ googleSearch: {} }] },
         });
-        const transcript = response.text;
+        const transcript = response.text?.trim();
         
-        if (!transcript || transcript.trim().toUpperCase() === "ERROR") {
+        if (!transcript || transcript.toUpperCase() === "ERROR" || transcript.length < 100) {
             log("❌ Failed to retrieve a valid transcript from the video.");
+            if(transcript && transcript.toUpperCase() !== "ERROR") {
+                log(`(Received a short or invalid response)`);
+            }
             return null;
         }
         log("✅ Transcript retrieved successfully.");
