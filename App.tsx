@@ -5,8 +5,8 @@ import { ChefHatIcon, BookOpenIcon, ShoppingCartIcon, PlusIcon, MicrophoneIcon, 
 import Spinner from './components/Spinner';
 import CookingAssistant from './components/CookingAssistant';
 import EditRecipeModal from './components/EditRecipeModal';
+import AddRecipeModal from './components/AddRecipeModal';
 import * as gemini from './services/geminiService';
-import * as fileUtils from './utils/fileUtils';
 import * as audioUtils from './utils/audioUtils';
 
 // Mock data
@@ -73,7 +73,7 @@ const Header: React.FC<{ activeView: AppView; onViewChange: (view: AppView) => v
 
 const RecipeCard: React.FC<{ recipe: Recipe; onSelect: (id: string) => void; }> = ({ recipe, onSelect }) => (
     <div onClick={() => onSelect(recipe.id)} className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 group">
-        <img src={recipe.imageUrls[0] || placeholderImage(recipe.id)} alt={recipe.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
+        <img src={recipe.imageUrls?.[0] || placeholderImage(recipe.id)} alt={recipe.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300" />
         <div className="p-4">
             <h3 className="text-lg font-bold text-gray-800 truncate">{recipe.title}</h3>
             <p className="text-sm text-gray-600 mt-1 h-10 overflow-hidden">{recipe.description}</p>
@@ -126,8 +126,8 @@ const RecipeDetail: React.FC<{ recipe: Recipe; onBack: () => void; onAddToShoppi
         <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
             <button onClick={onBack} className="mb-6 text-emerald-600 hover:text-emerald-800 font-semibold">&larr; Back to Recipes</button>
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <img src={recipe.imageUrls[0] || placeholderImage(recipe.id)} alt={recipe.title} className="w-full h-64 sm:h-80 object-cover" />
-                {recipe.imageUrls.length > 1 && (
+                <img src={recipe.imageUrls?.[0] || placeholderImage(recipe.id)} alt={recipe.title} className="w-full h-64 sm:h-80 object-cover" />
+                {recipe.imageUrls && recipe.imageUrls.length > 1 && (
                     <div className="p-4 bg-gray-50 flex space-x-2 overflow-x-auto">
                         {recipe.imageUrls.map((url, index) => (
                              <img key={index} src={url} alt={`${recipe.title} ${index+1}`} className="w-24 h-24 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-emerald-500"/>
@@ -261,118 +261,6 @@ const ShoppingList: React.FC<{ list: ShoppingListItem[]; onClear: () => void; }>
     );
 };
 
-const AddRecipeModal: React.FC<{ isOpen: boolean; onClose: () => void; onAddRecipe: (recipe: Partial<Recipe>) => void; setLoading: (loading: { active: boolean, message: string }) => void; }> = ({ isOpen, onClose, onAddRecipe, setLoading }) => {
-    const [activeTab, setActiveTab] = useState<'text' | 'image' | 'url' | 'youtube'>('text');
-    const [text, setText] = useState('');
-    const [url, setUrl] = useState('');
-    const [youtubeUrl, setYoutubeUrl] = useState('');
-    const fileInputRef = useRef<HTMLInputElement>(null);
-
-    const handleAdd = async (recipePromise: Promise<Partial<Recipe> | null>) => {
-        try {
-            const recipe = await recipePromise;
-            if (recipe) {
-                onAddRecipe(recipe);
-            } else {
-                alert('Could not generate a recipe. The AI might not have understood the input. Please try again or use a different method.');
-            }
-        } catch (error) {
-            console.error("Failed to generate recipe:", error);
-            alert(`An error occurred: ${(error as Error).message}`);
-        } finally {
-            setLoading({ active: false, message: '' });
-        }
-    };
-    
-    const handleTextSubmit = () => {
-        if (!text) return;
-        setLoading({ active: true, message: 'Structuring your recipe...' });
-        handleAdd(gemini.structureTextToRecipe(text));
-    };
-
-    const handleUrlSubmit = () => {
-        if (!url) return;
-        setLoading({ active: true, message: 'Fetching recipe from URL...' });
-        handleAdd(gemini.generateRecipeFromUrl(url));
-    };
-    
-    const handleYoutubeSubmit = () => {
-        if (!youtubeUrl) return;
-        setLoading({ active: true, message: 'Generating recipe from YouTube video...' });
-        handleAdd(gemini.generateRecipeFromYoutubeUrl(youtubeUrl));
-    };
-
-    const handleFileSubmit = async (file: File) => {
-        if (!file) return;
-        setLoading({ active: true, message: `Analyzing image...` });
-        const base64 = await fileUtils.fileToBase64(file);
-        handleAdd(gemini.generateRecipeFromImage(file.type, base64));
-    };
-
-    const tabs = [
-        { id: 'text', icon: DocumentTextIcon, label: 'From Text' },
-        { id: 'image', icon: PhotoIcon, label: 'From Image' },
-        { id: 'url', icon: LinkIcon, label: 'From URL' },
-        { id: 'youtube', icon: VideoCameraIcon, label: 'From YouTube' },
-    ];
-    
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-bold text-gray-800">Add a New Recipe</h2>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-                        <XMarkIcon className="w-6 h-6 text-gray-600" />
-                    </button>
-                </div>
-                <div className="p-6">
-                    <div className="border-b border-gray-200 mb-4">
-                        <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
-                            {tabs.map(tab => (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id as any)}
-                                    className={`whitespace-nowrap flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                                    <tab.icon className="w-5 h-5"/> {tab.label}
-                                </button>
-                            ))}
-                        </nav>
-                    </div>
-
-                    {activeTab === 'text' && (
-                        <div className="space-y-3">
-                            <label htmlFor="recipe-text" className="text-sm font-medium text-gray-700">Paste your recipe text below:</label>
-                            <textarea id="recipe-text" rows={10} value={text} onChange={e => setText(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="e.g., 2 cups flour, 1 cup sugar... mix and bake at 350F for 20 minutes."></textarea>
-                            <button onClick={handleTextSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold">Generate Recipe</button>
-                        </div>
-                    )}
-                     {activeTab === 'image' && (
-                        <div className="space-y-3 text-center">
-                            <p className="text-sm text-gray-600">Upload an image of a dish and let AI create the recipe for you.</p>
-                            <input type="file" ref={fileInputRef} hidden accept='image/*' onChange={(e) => e.target.files && handleFileSubmit(e.target.files[0])} />
-                            <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold">Select Image File</button>
-                        </div>
-                    )}
-                     {activeTab === 'url' && (
-                        <div className="space-y-3">
-                             <label htmlFor="recipe-url" className="text-sm font-medium text-gray-700">Enter a URL to a recipe page:</label>
-                            <input type="url" id="recipe-url" value={url} onChange={e => setUrl(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="https://example.com/best-cookies-ever" />
-                            <button onClick={handleUrlSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold">Fetch Recipe</button>
-                        </div>
-                    )}
-                    {activeTab === 'youtube' && (
-                        <div className="space-y-3">
-                             <label htmlFor="youtube-url" className="text-sm font-medium text-gray-700">Enter a YouTube video URL:</label>
-                            <input type="url" id="youtube-url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500" placeholder="https://www.youtube.com/watch?v=..." />
-                            <button onClick={handleYoutubeSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold">Generate from YouTube</button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
 // --- Main App Component ---
 
 const App: React.FC = () => {
@@ -384,6 +272,10 @@ const App: React.FC = () => {
     const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
     const [isLoading, setIsLoading] = useState<{ active: boolean, message: string }>({ active: false, message: '' });
     const [assistantRecipe, setAssistantRecipe] = useState<Recipe | null>(null);
+    const [liveLogs, setLiveLogs] = useState<string[]>([]);
+
+    const addLog = (log: string) => setLiveLogs(prev => [...prev, log]);
+    const clearLogs = () => setLiveLogs([]);
 
     const selectedRecipe = useMemo(() => recipes.find(r => r.id === selectedRecipeId), [recipes, selectedRecipeId]);
 
@@ -477,7 +369,9 @@ const App: React.FC = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAddRecipe={handleAddRecipe}
-                setLoading={setIsLoading}
+                liveLogs={liveLogs}
+                addLog={addLog}
+                clearLogs={clearLogs}
              />
 
             {editingRecipe && (

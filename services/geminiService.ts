@@ -45,14 +45,14 @@ const parseJsonResponse = (jsonString?: string): Partial<Recipe> | null => {
         }
         return JSON.parse(cleanedJson);
     } catch (error) {
-        // FIX: Added curly braces to the catch block to correctly scope the error variable and contain the block's statements.
         console.error("Failed to parse JSON response:", error);
         console.error("Original string that failed parsing:", jsonString);
         return null;
     }
 };
 
-export const generateRecipeFromImage = async (mimeType: string, base64Image: string): Promise<Partial<Recipe> | null> => {
+export const generateRecipeFromImage = async (mimeType: string, base64Image: string, log: (message: string) => void): Promise<Partial<Recipe> | null> => {
+  log("Identifying dish and creating recipe...");
   const imagePart = { inlineData: { mimeType, data: base64Image } };
   const textPart = { text: "Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can't identify a specific dish, make a recipe for what you see. Format the response as JSON using the provided schema." };
 
@@ -61,53 +61,163 @@ export const generateRecipeFromImage = async (mimeType: string, base64Image: str
     contents: { parts: [imagePart, textPart] },
     config: { responseMimeType: "application/json", responseSchema: recipeSchema },
   });
-
+  log("Recipe structured successfully.");
   return parseJsonResponse(response.text);
 };
 
-export const generateRecipeFromUrl = async (url: string): Promise<Partial<Recipe> | null> => {
-  // FIX: Refactored to a two-step process to align with API guidelines.
-  // First, extract text content using Google Search.
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `Extract the recipe from this web page: ${url}. Return only the recipe's text content (ingredients and instructions).`,
-    config: {
-        tools: [{ googleSearch: {} }],
-    },
-  });
-  // Second, structure the extracted text into a recipe JSON object.
-  if (response.text) {
-    return structureTextToRecipe(response.text);
-  }
-  return null;
-};
 
-export const generateRecipeFromYoutubeUrl = async (url: string): Promise<Partial<Recipe> | null> => {
-    // FIX: Refactored to a two-step process to align with API guidelines.
-    // First, extract text content using Google Search.
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Extract the recipe from this YouTube URL: ${url}. Act as if you have the video's full transcript. Use search to find information about the video if necessary. Return only the recipe's text content (ingredients and instructions).`,
-        config: {
-            tools: [{ googleSearch: {} }],
-        },
-    });
-    // Second, structure the extracted text into a recipe JSON object.
-    if (response.text) {
-        return structureTextToRecipe(response.text);
-    }
-    return null;
-};
-
-
-export const structureTextToRecipe = async (text: string): Promise<Partial<Recipe> | null> => {
+export const structureTextToRecipe = async (text: string, log: (message: string) => void): Promise<Partial<Recipe> | null> => {
+    log("AI is structuring the recipe...");
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
         contents: `Take the following text and structure it as a recipe. Format the response as JSON using the provided schema.\n\nText: "${text}"`,
         config: { responseMimeType: "application/json", responseSchema: recipeSchema },
     });
+    log("Recipe structured.");
     return parseJsonResponse(response.text);
 };
+
+
+export const generateImageForRecipe = async (title: string, description: string, log: (message: string) => void): Promise<string | null> => {
+    log(`Generating a new image for "${title}"...`);
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash-image',
+            contents: {
+                parts: [{ text: `Generate a delicious-looking photo of "${title}". It is described as: "${description}"` }],
+            },
+            config: {
+                responseModalities: [Modality.IMAGE],
+            },
+        });
+        for (const part of response.candidates[0].content.parts) {
+            if (part.inlineData) {
+                log("Image generated successfully.");
+                return `data:image/png;base64,${part.inlineData.data}`;
+            }
+        }
+        return null;
+    } catch (e) {
+        log(`Image generation failed: ${(e as Error).message}`);
+        console.error("Image generation failed", e);
+        return null;
+    }
+};
+
+// --- YouTube URL Processing ---
+
+const getTranscriptFromYoutubeUrl = async (url: string, log: (message: string) => void): Promise<string | null> => {
+    log(`Attempting to retrieve video transcript for: ${url}`);
+    const prompt = `Please retrieve the full text transcript for the YouTube video at this URL: ${url}. Return only the verbatim transcript text. Do not add any commentary or summary. If a transcript is not available or you cannot access it, return the single word "ERROR".`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        const transcript = response.text;
+        
+        if (!transcript || transcript.trim().toUpperCase() === "ERROR") {
+            log("❌ Failed to retrieve a valid transcript from the video.");
+            return null;
+        }
+        log("✅ Transcript retrieved successfully.");
+        return transcript;
+    } catch (e) {
+        log(`❌ An error occurred while fetching the transcript: ${(e as Error).message}`);
+        console.error("Transcript fetching failed", e);
+        return null;
+    }
+}
+
+const getYoutubeVideoId = (url: string): string | null => {
+    const regex = /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/ ]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+}
+
+export const generateRecipeFromYoutubeUrl = async (url: string, log: (message: string) => void): Promise<Partial<Recipe> | null> => {
+    const transcript = await getTranscriptFromYoutubeUrl(url, log);
+    if (!transcript) {
+        log("Halting process as no transcript was found.");
+        return null;
+    }
+
+    const recipeData = await structureTextToRecipe(transcript, log);
+    if (!recipeData) {
+        log("❌ Failed to structure the recipe from the transcript.");
+        return null;
+    }
+
+    let finalImageUrls: string[] = [];
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+        const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        finalImageUrls.push(thumbnailUrl);
+        log("✅ Found video thumbnail.");
+    } else {
+        log("Could not parse video ID to get thumbnail. Attempting to generate an image.");
+        const generatedImage = await generateImageForRecipe(recipeData.title || "the dish", recipeData.description || "", log);
+        if (generatedImage) {
+            finalImageUrls.push(generatedImage);
+        }
+    }
+    
+    return { ...recipeData, imageUrls: finalImageUrls };
+};
+
+// --- Standard URL Processing ---
+
+const getTextContentFromUrl = async (url: string, log: (message: string) => void): Promise<string | null> => {
+    log(`Attempting to retrieve page content for: ${url}`);
+    const prompt = `Please extract the main recipe content from the webpage at this URL: ${url}. Include the title, description, ingredients, and instructions. Return only the text of the recipe. If you cannot access the URL or find a recipe on the page, return the single word "ERROR".`;
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: prompt,
+            config: { tools: [{ googleSearch: {} }] },
+        });
+        const text = response.text;
+        
+        if (!text || text.trim().toUpperCase() === "ERROR") {
+            log("❌ Failed to retrieve valid content from the URL.");
+            return null;
+        }
+        log("✅ Page content retrieved successfully.");
+        return text;
+    } catch (e) {
+        log(`❌ An error occurred while fetching page content: ${(e as Error).message}`);
+        console.error("Page content fetching failed", e);
+        return null;
+    }
+}
+
+export const generateRecipeFromUrl = async (url: string, log: (message: string) => void): Promise<Partial<Recipe> | null> => {
+    const pageText = await getTextContentFromUrl(url, log);
+    if (!pageText) {
+        log("Halting process as no content was found.");
+        return null;
+    }
+
+    const recipeData = await structureTextToRecipe(pageText, log);
+    if (!recipeData) {
+        log("❌ Failed to structure the recipe from the page content.");
+        return null;
+    }
+    
+    log("Attempting to generate an image for the recipe.");
+    let finalImageUrls: string[] = [];
+    const generatedImage = await generateImageForRecipe(recipeData.title || "the dish", recipeData.description || "", log);
+    if (generatedImage) {
+        finalImageUrls.push(generatedImage);
+    }
+    
+    return { ...recipeData, imageUrls: finalImageUrls };
+};
+
+
+// --- Other Functions ---
 
 export const adjustIngredients = async (ingredients: Ingredient[], originalServings: number, newServings: number): Promise<Ingredient[] | null> => {
     const ingredientsString = ingredients.map(i => `${i.quantity} ${i.name}`).join('\n');

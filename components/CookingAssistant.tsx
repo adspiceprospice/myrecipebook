@@ -1,10 +1,16 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality } from '@google/genai';
+// FIX: The `LiveSession` type is not exported from `@google/genai`. It has been removed from the import.
+import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
 import type { Recipe } from '../types';
 // FIX: Added missing ChefHatIcon import.
 import { MicrophoneIcon, StopCircleIcon, XMarkIcon, ChefHatIcon } from './icons';
 import { encode, decode, decodeAudioData } from '../utils/audioUtils';
+
+// FIX: Define a minimal `LiveSession` interface since the type is not exported from the library.
+interface LiveSession {
+  close: () => void;
+}
 
 interface CookingAssistantProps {
   recipe: Recipe;
