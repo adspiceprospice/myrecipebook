@@ -14,6 +14,7 @@ interface EditRecipeModalProps {
 const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClose, onSave }) => {
   const [editedRecipe, setEditedRecipe] = useState<Recipe>(JSON.parse(JSON.stringify(recipe)));
   const [newImageUrl, setNewImageUrl] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   if (!isOpen) return null;
 
@@ -55,6 +56,29 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
       } else {
           alert('Please enter a valid image URL (starting with http/https).')
       }
+  };
+
+  const handleGenerateImage = async () => {
+    setIsGeneratingImage(true);
+    try {
+      const response = await fetch(`/api/recipes/${editedRecipe.id}/generate-image`, {
+        method: 'POST',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Add the new image URL to the recipe
+        handleFieldChange('imageUrls', [...editedRecipe.imageUrls, data.imageUrl]);
+      } else {
+        const error = await response.json();
+        alert(`Failed to generate image: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error generating image:', error);
+      alert('Failed to generate image. Please try again.');
+    } finally {
+      setIsGeneratingImage(false);
+    }
   };
 
   const handleSetPrimaryImage = (index: number) => {
@@ -115,6 +139,20 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
                  <div className="mt-2 flex gap-2">
                     <input type="url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="Add new image URL..." className="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
                     <button onClick={handleAddImage} className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 text-sm font-semibold">Add</button>
+                    <button
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage}
+                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {isGeneratingImage ? (
+                        <>
+                          <span className="inline-block w-3 h-3 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></span>
+                          Generating...
+                        </>
+                      ) : (
+                        <>✨ Generate</>
+                      )}
+                    </button>
                 </div>
             </div>
 
