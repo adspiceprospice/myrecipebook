@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import type { Recipe } from '@/types';
-import { MicrophoneIcon, SpeakerWaveIcon, PencilIcon, TrashIcon } from './icons';
+import { PencilIcon, TrashIcon } from './icons';
 
 const placeholderImage = (id: string) => `https://picsum.photos/seed/${id}/600/400`;
 
@@ -10,7 +10,6 @@ interface RecipeDetailProps {
   recipe: Recipe;
   onBack: () => void;
   onAddToShoppingList: (recipe: Recipe, servings: number) => Promise<void>;
-  onStartAssistant: (recipe: Recipe) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
 }
@@ -19,58 +18,11 @@ export default function RecipeDetail({
   recipe,
   onBack,
   onAddToShoppingList,
-  onStartAssistant,
   onEdit,
   onDelete,
 }: RecipeDetailProps) {
   const [servings, setServings] = useState(recipe.servings);
   const [isAdding, setIsAdding] = useState(false);
-  const audioRef = useRef<{ ctx: AudioContext, source: AudioBufferSourceNode } | null>(null);
-
-  const handlePlayAudio = async (text: string) => {
-    if (audioRef.current) {
-      audioRef.current.source.stop();
-      audioRef.current.ctx.close();
-      audioRef.current = null;
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
-      });
-
-      if (response.ok) {
-        const { audio: audioData } = await response.json();
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 24000
-        });
-
-        // Decode base64 to ArrayBuffer
-        const binaryString = atob(audioData);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Decode audio data
-        const decodedBuffer = await ctx.decodeAudioData(bytes.buffer);
-        const source = ctx.createBufferSource();
-        source.buffer = decodedBuffer;
-        source.connect(ctx.destination);
-        source.start();
-        audioRef.current = { ctx, source };
-        source.onended = () => {
-          ctx.close();
-          audioRef.current = null;
-        };
-      }
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
-  };
 
   const handleAddToShoppingList = async () => {
     setIsAdding(true);
@@ -157,13 +109,6 @@ export default function RecipeDetail({
             </div>
           </div>
 
-          <button
-            onClick={() => onStartAssistant(recipe)}
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-600 transition-colors"
-          >
-            <MicrophoneIcon /> Start Cooking Assistant
-          </button>
-
           {recipe.notes && (
             <div className="mt-8 p-4 bg-amber-50 rounded-lg">
               <h3 className="font-bold text-amber-800">My Notes</h3>
@@ -217,12 +162,6 @@ export default function RecipeDetail({
                         {i + 1}
                       </span>
                       <span className="flex-grow pt-1">{stepText}</span>
-                      <button
-                        onClick={() => handlePlayAudio(stepText)}
-                        className="ml-2 p-1 text-gray-500 hover:text-emerald-600 rounded-full"
-                      >
-                        <SpeakerWaveIcon className="w-5 h-5" />
-                      </button>
                     </li>
                   );
                 })}

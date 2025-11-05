@@ -1,15 +1,13 @@
 # My Recipe Book
 
-An AI-powered recipe management application built with Next.js 15, Prisma ORM, and Google Gemini AI. Create, manage, and cook with intelligent recipe assistance.
+An AI-powered recipe management application built with Next.js 15, Prisma ORM, and Vercel AI SDK. Create, manage, and cook with intelligent recipe assistance.
 
 ## Features
 
 - 📝 **Recipe Management**: Create, edit, and delete recipes with ease
-- 🤖 **AI-Powered Generation**: Generate recipes from text, images, URLs, or YouTube videos using Google Gemini
+- 🤖 **AI-Powered Generation**: Generate recipes from text, images, URLs, or YouTube videos using GPT-4o-mini and Google Gemini
 - 🛒 **Smart Shopping Lists**: Automatically generate shopping lists with ingredient scaling
-- 🎯 **Cooking Assistant**: Real-time cooking guidance with voice support
-- 🔊 **Text-to-Speech**: Listen to cooking instructions
-- 🖼️ **Image Storage**: Store recipe images using Vercel Blob
+- 🖼️ **AI Image Generation**: Generate recipe images using Google Gemini
 - 💾 **PostgreSQL Database**: Persistent storage with Prisma ORM
 
 ## Tech Stack
@@ -17,7 +15,7 @@ An AI-powered recipe management application built with Next.js 15, Prisma ORM, a
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Database**: PostgreSQL with Prisma ORM
-- **AI**: Google Gemini API
+- **AI**: Vercel AI SDK with OpenAI GPT-4o-mini and Google Gemini
 - **Storage**: Vercel Blob
 - **Styling**: Tailwind CSS
 - **Deployment**: Vercel
@@ -26,6 +24,7 @@ An AI-powered recipe management application built with Next.js 15, Prisma ORM, a
 
 - Node.js 18+
 - PostgreSQL database
+- OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
 - Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 ## Local Development Setup
@@ -51,6 +50,7 @@ An AI-powered recipe management application built with Next.js 15, Prisma ORM, a
    Update the following variables:
    ```env
    DATABASE_URL="postgresql://user:password@localhost:5432/myrecipebook"
+   OPENAI_API_KEY="your-openai-api-key"
    GEMINI_API_KEY="your-gemini-api-key"
    ```
 
@@ -94,6 +94,7 @@ An AI-powered recipe management application built with Next.js 15, Prisma ORM, a
 
 4. **Configure additional environment variables**
    - In your Vercel project settings, go to Environment Variables
+   - Add: `OPENAI_API_KEY` = your OpenAI API key ([Get one here](https://platform.openai.com/api-keys))
    - Add: `GEMINI_API_KEY` = your Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 5. **Set up Vercel Blob Storage**
@@ -138,7 +139,7 @@ myrecipebook/
 ├── components/            # React components
 ├── lib/                   # Utility functions
 │   ├── prisma.ts         # Prisma client
-│   ├── gemini.ts         # Gemini AI service
+│   ├── ai.ts             # Vercel AI SDK service (OpenAI & Google)
 │   └── blob.ts           # Blob storage utilities
 ├── prisma/               # Database schema
 │   └── schema.prisma

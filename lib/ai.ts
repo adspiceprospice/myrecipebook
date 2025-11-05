@@ -1,37 +1,22 @@
-import { GoogleGenAI, Type, Modality } from "@google/genai";
+import { generateObject, generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
+import { z } from 'zod';
 import type { Ingredient } from '@/types';
 
-function getAI() {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY environment variable is not set");
-  }
-  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-}
-
-const recipeSchema = {
-  type: Type.OBJECT,
-  properties: {
-    title: { type: Type.STRING },
-    description: { type: Type.STRING },
-    servings: { type: Type.INTEGER },
-    ingredients: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          name: { type: Type.STRING },
-          quantity: { type: Type.STRING },
-        },
-        required: ["name", "quantity"],
-      },
-    },
-    instructions: {
-      type: Type.ARRAY,
-      items: { type: Type.STRING },
-    },
-  },
-  required: ["title", "description", "servings", "ingredients", "instructions"],
-};
+// Zod schema for recipe structure
+const recipeSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  servings: z.number().int(),
+  ingredients: z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.string(),
+    })
+  ),
+  instructions: z.array(z.string()),
+});
 
 const parseJsonResponse = (jsonString?: string): any => {
   try {
@@ -51,33 +36,57 @@ const parseJsonResponse = (jsonString?: string): any => {
 };
 
 export async function generateRecipeFromImage(mimeType: string, base64Image: string) {
-  const ai = getAI();
-  const imagePart = { inlineData: { mimeType, data: base64Image } };
-  const textPart = { text: "Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can't identify a specific dish, make a recipe for what you see. Format the response as JSON using the provided schema." };
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
-    contents: { parts: [imagePart, textPart] },
-    config: { responseMimeType: "application/json", responseSchema: recipeSchema },
+  const { object } = await generateObject({
+    model: openai('gpt-4o-mini'),
+    schema: recipeSchema,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: 'Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can\'t identify a specific dish, make a recipe for what you see.',
+          },
+          {
+            type: 'image',
+            image: `data:${mimeType};base64,${base64Image}`,
+          },
+        ],
+      },
+    ],
   });
 
-  return parseJsonResponse(response.text);
+  return object;
 }
 
 export async function structureTextToRecipe(text: string) {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `Take the following text and structure it as a recipe. Format the response as JSON using the provided schema.\n\nText: "${text}"`,
-    config: { responseMimeType: "application/json", responseSchema: recipeSchema },
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+
+  const { object } = await generateObject({
+    model: openai('gpt-4o-mini'),
+    schema: recipeSchema,
+    prompt: `Take the following text and structure it as a recipe.\n\nText: "${text}"`,
   });
 
-  return parseJsonResponse(response.text);
+  return object;
 }
 
 export async function generateImageForRecipe(title: string, description: string): Promise<string | null> {
   try {
-    const ai = getAI();
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is not set");
+    }
+
+    // Import Google GenAI directly for image generation (not supported in Vercel AI SDK yet)
+    const { GoogleGenAI, Modality } = await import("@google/genai");
+    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -103,6 +112,10 @@ export async function generateImageForRecipe(title: string, description: string)
 }
 
 async function getTranscriptFromYoutubeUrl(url: string): Promise<string | null> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
   const prompt = `You are a specialized AI assistant with expertise in processing YouTube video data. Your task is to find and return the full text transcript for a given YouTube video URL.
 Video URL: ${url}
 
@@ -115,14 +128,15 @@ Instructions:
 6. If after a thorough search you cannot find any transcript or captions for this video, you MUST return the single word: "ERROR". Do not explain why or apologize.`;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
+    // Use Google model with search grounding for YouTube transcript extraction
+    const { text } = await generateText({
+      model: google('gemini-2.0-flash-exp', {
+        useSearchGrounding: true,
+      }),
+      prompt,
     });
-    const transcript = response.text?.trim();
 
+    const transcript = text?.trim();
     if (!transcript || transcript.toUpperCase() === "ERROR" || transcript.length < 100) {
       return null;
     }
@@ -163,16 +177,20 @@ export async function generateRecipeFromYoutubeUrl(url: string) {
 }
 
 async function getTextContentFromUrl(url: string): Promise<string | null> {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+
   const prompt = `Please extract the main recipe content from the webpage at this URL: ${url}. Include the title, description, ingredients, and instructions. Return only the text of the recipe. If you cannot access the URL or find a recipe on the page, return the single word "ERROR".`;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
+    // Use Google model with search grounding for web scraping
+    const { text } = await generateText({
+      model: google('gemini-2.0-flash-exp', {
+        useSearchGrounding: true,
+      }),
+      prompt,
     });
-    const text = response.text;
 
     if (!text || text.trim().toUpperCase() === "ERROR") {
       return null;
@@ -202,48 +220,24 @@ export async function generateRecipeFromUrl(url: string) {
 }
 
 export async function adjustIngredients(ingredients: Ingredient[], originalServings: number, newServings: number) {
-  const ai = getAI();
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY environment variable is not set");
+  }
+
   const ingredientsString = ingredients.map(i => `${i.quantity} ${i.name}`).join('\n');
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `This recipe is for ${originalServings} servings. Adjust the ingredient quantities for ${newServings} servings. Original ingredients:\n${ingredientsString}\n\nReturn ONLY the adjusted ingredients list as a JSON array of objects with "name" and "quantity" keys.`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            name: { type: Type.STRING },
-            quantity: { type: Type.STRING },
-          },
-          required: ["name", "quantity"]
-        }
-      }
-    }
+
+  const ingredientSchema = z.array(
+    z.object({
+      name: z.string(),
+      quantity: z.string(),
+    })
+  );
+
+  const { object } = await generateObject({
+    model: openai('gpt-4o-mini'),
+    schema: ingredientSchema,
+    prompt: `This recipe is for ${originalServings} servings. Adjust the ingredient quantities for ${newServings} servings. Original ingredients:\n${ingredientsString}\n\nReturn the adjusted ingredients list.`,
   });
 
-  return parseJsonResponse(response.text) as Ingredient[];
-}
-
-export async function textToSpeech(text: string): Promise<string | null> {
-  try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: [Modality.AUDIO],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' },
-          },
-        },
-      },
-    });
-    return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data ?? null;
-  } catch(e) {
-    console.error("TTS generation failed", e);
-    return null;
-  }
+  return object as Ingredient[];
 }

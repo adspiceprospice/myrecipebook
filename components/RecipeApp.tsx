@@ -4,7 +4,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Recipe, AppView, Ingredient, ShoppingListItem, Instruction } from '@/types';
 import { ChefHatIcon, BookOpenIcon, ShoppingCartIcon, PlusIcon } from './icons';
 import Spinner from './Spinner';
-import CookingAssistant from './CookingAssistant';
 import EditRecipeModal from './EditRecipeModal';
 import AddRecipeModal from './AddRecipeModal';
 import RecipeDetail from './RecipeDetail';
@@ -66,7 +65,6 @@ export default function RecipeApp() {
     active: false,
     message: ''
   });
-  const [assistantRecipe, setAssistantRecipe] = useState<Recipe | null>(null);
   const [liveLogs, setLiveLogs] = useState<string[]>([]);
 
   const addLog = (log: string) => setLiveLogs(prev => [...prev, log]);
@@ -230,7 +228,6 @@ export default function RecipeApp() {
             recipe={selectedRecipe}
             onBack={() => handleViewChange('list')}
             onAddToShoppingList={handleAddToShoppingList}
-            onStartAssistant={setAssistantRecipe}
             onEdit={() => setEditingRecipe(selectedRecipe)}
             onDelete={handleDeleteRecipe}
           />
@@ -276,13 +273,6 @@ export default function RecipeApp() {
           recipe={editingRecipe}
           onClose={() => setEditingRecipe(null)}
           onSave={handleSaveRecipe}
-        />
-      )}
-
-      {assistantRecipe && (
-        <CookingAssistant
-          recipe={assistantRecipe}
-          onClose={() => setAssistantRecipe(null)}
         />
       )}
 

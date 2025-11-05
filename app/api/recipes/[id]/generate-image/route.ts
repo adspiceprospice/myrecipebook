@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { generateImageForRecipe } from '@/lib/gemini';
+import { generateImageForRecipe } from '@/lib/ai';
 import { uploadBase64Image } from '@/lib/blob';
 
 export async function POST(

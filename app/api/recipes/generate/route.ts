@@ -4,7 +4,7 @@ import {
   generateRecipeFromYoutubeUrl,
   generateRecipeFromUrl,
   generateRecipeFromImage,
-} from '@/lib/gemini';
+} from '@/lib/ai';
 
 export async function POST(request: NextRequest) {
   try {
