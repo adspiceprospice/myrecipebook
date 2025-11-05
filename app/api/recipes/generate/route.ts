@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
         } else {
           recipeData = await generateRecipeFromUrl(content);
         }
+        // Add sourceUrl to the recipe data when extracted from a URL
+        recipeData = { ...recipeData, sourceUrl: content };
         break;
       case 'image':
         const { mimeType, base64Image } = body;

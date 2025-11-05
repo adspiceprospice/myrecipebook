@@ -121,6 +121,10 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
                 <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Your Notes</label>
                 <textarea id="notes" rows={4} value={editedRecipe.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" placeholder="e.g., 'Tried with almonds instead of walnuts, was great!'" />
             </div>
+            <div>
+                <label htmlFor="sourceUrl" className="block text-sm font-medium text-gray-700">Source URL</label>
+                <input type="url" id="sourceUrl" value={editedRecipe.sourceUrl || ''} onChange={e => handleFieldChange('sourceUrl', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" placeholder="https://example.com/recipe" />
+            </div>
 
             {/* Image Gallery */}
             <div>

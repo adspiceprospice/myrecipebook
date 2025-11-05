@@ -21,6 +21,7 @@ export interface Recipe {
   servings: number;
   imageUrls: string[];
   notes: string | null;
+  sourceUrl?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -42,4 +43,5 @@ export interface RecipeInput {
   servings: number;
   imageUrls?: string[];
   notes?: string;
+  sourceUrl?: string;
 }

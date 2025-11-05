@@ -16,6 +16,7 @@ model Recipe {
   description String?
   servings    Int      @default(4)
   notes       String?
+  sourceUrl   String?
   imageUrls   String[] @default([])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
