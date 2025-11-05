@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         description: body.description || null,
         servings: body.servings,
         notes: body.notes || null,
+        sourceUrl: body.sourceUrl || null,
         imageUrls: body.imageUrls || [],
         ingredients: {
           create: body.ingredients.map((ing) => ({

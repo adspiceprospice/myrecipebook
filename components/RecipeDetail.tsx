@@ -117,6 +117,27 @@ export default function RecipeDetail({
                 {recipe.title}
               </h1>
               <p className="mt-2 text-gray-600">{recipe.description}</p>
+              {(recipe.sourceUrl || recipe.createdAt) && (
+                <div className="mt-3 space-y-1 text-sm text-gray-500">
+                  {recipe.createdAt && (
+                    <div>
+                      Added: {new Date(recipe.createdAt).toLocaleDateString()}
+                    </div>
+                  )}
+                  {recipe.sourceUrl && (
+                    <div>
+                      Source: <a
+                        href={recipe.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:text-emerald-800 hover:underline"
+                      >
+                        {recipe.sourceUrl}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-4">
               <button
