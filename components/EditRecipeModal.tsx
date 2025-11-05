@@ -1,6 +1,7 @@
+'use client';
 
 import React, { useState } from 'react';
-import type { Recipe, Ingredient } from '../types';
+import type { Recipe, Ingredient } from '@/types';
 import { XMarkIcon, PlusIcon, TrashIcon, ArrowUpIcon, ArrowDownIcon, StarIcon, CameraIcon } from './icons';
 
 interface EditRecipeModalProps {
@@ -86,7 +87,7 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
             </div>
             <div>
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea id="description" rows={3} value={editedRecipe.description} onChange={e => handleFieldChange('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
+                <textarea id="description" rows={3} value={editedRecipe.description || ''} onChange={e => handleFieldChange('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
             </div>
              <div>
                 <label htmlFor="servings" className="block text-sm font-medium text-gray-700">Servings</label>
@@ -141,7 +142,7 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
                      {editedRecipe.instructions.map((step, i) => (
                         <div key={i} className="flex items-start gap-2">
                             <span className="pt-2 font-semibold text-gray-500">{i+1}.</span>
-                            <textarea rows={2} value={step} onChange={e => handleDynamicChange('instructions', i, e.target.value)} className="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"/>
+                            <textarea rows={2} value={typeof step === 'string' ? step : step.text} onChange={e => handleDynamicChange('instructions', i, e.target.value)} className="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"/>
                              <div className="flex flex-col">
                                 <button onClick={() => handleMoveItem('instructions', i, 'up')} disabled={i===0} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowUpIcon className="w-4 h-4" /></button>
                                 <button onClick={() => handleMoveItem('instructions', i, 'down')} disabled={i===editedRecipe.instructions.length-1} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowDownIcon className="w-4 h-4" /></button>

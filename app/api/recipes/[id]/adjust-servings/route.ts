@@ -4,13 +4,14 @@ import { adjustIngredients } from '@/lib/gemini';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { newServings } = await request.json();
 
     const recipe = await prisma.recipe.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         ingredients: true,
       },

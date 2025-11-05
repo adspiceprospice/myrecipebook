@@ -1,11 +1,12 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { Ingredient } from '@/types';
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is not set");
+function getAI() {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY environment variable is not set");
+  }
+  return new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 }
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const recipeSchema = {
   type: Type.OBJECT,
@@ -50,6 +51,7 @@ const parseJsonResponse = (jsonString?: string): any => {
 };
 
 export async function generateRecipeFromImage(mimeType: string, base64Image: string) {
+  const ai = getAI();
   const imagePart = { inlineData: { mimeType, data: base64Image } };
   const textPart = { text: "Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can't identify a specific dish, make a recipe for what you see. Format the response as JSON using the provided schema." };
 
@@ -63,6 +65,7 @@ export async function generateRecipeFromImage(mimeType: string, base64Image: str
 }
 
 export async function structureTextToRecipe(text: string) {
+  const ai = getAI();
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
     contents: `Take the following text and structure it as a recipe. Format the response as JSON using the provided schema.\n\nText: "${text}"`,
@@ -74,6 +77,7 @@ export async function structureTextToRecipe(text: string) {
 
 export async function generateImageForRecipe(title: string, description: string): Promise<string | null> {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-image',
       contents: {
@@ -84,9 +88,11 @@ export async function generateImageForRecipe(title: string, description: string)
       },
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
+    if (response.candidates?.[0]?.content?.parts) {
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
+        }
       }
     }
     return null;
@@ -109,6 +115,7 @@ Instructions:
 6. If after a thorough search you cannot find any transcript or captions for this video, you MUST return the single word: "ERROR". Do not explain why or apologize.`;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
       contents: prompt,
@@ -159,6 +166,7 @@ async function getTextContentFromUrl(url: string): Promise<string | null> {
   const prompt = `Please extract the main recipe content from the webpage at this URL: ${url}. Include the title, description, ingredients, and instructions. Return only the text of the recipe. If you cannot access the URL or find a recipe on the page, return the single word "ERROR".`;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-pro',
       contents: prompt,
@@ -194,6 +202,7 @@ export async function generateRecipeFromUrl(url: string) {
 }
 
 export async function adjustIngredients(ingredients: Ingredient[], originalServings: number, newServings: number) {
+  const ai = getAI();
   const ingredientsString = ingredients.map(i => `${i.quantity} ${i.name}`).join('\n');
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -219,6 +228,7 @@ export async function adjustIngredients(ingredients: Ingredient[], originalServi
 
 export async function textToSpeech(text: string): Promise<string | null> {
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text }] }],

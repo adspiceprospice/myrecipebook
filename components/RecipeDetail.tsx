@@ -188,20 +188,23 @@ export default function RecipeDetail({
                 Instructions
               </h2>
               <ol className="mt-4 space-y-4 text-gray-700">
-                {recipe.instructions.map((step, i) => (
-                  <li key={i} className="flex items-start">
-                    <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500 text-white font-bold mr-4">
-                      {i + 1}
-                    </span>
-                    <span className="flex-grow pt-1">{step}</span>
-                    <button
-                      onClick={() => handlePlayAudio(step)}
-                      className="ml-2 p-1 text-gray-500 hover:text-emerald-600 rounded-full"
-                    >
-                      <SpeakerWaveIcon className="w-5 h-5" />
-                    </button>
-                  </li>
-                ))}
+                {recipe.instructions.map((step, i) => {
+                  const stepText = typeof step === 'string' ? step : step.text;
+                  return (
+                    <li key={i} className="flex items-start">
+                      <span className="flex-shrink-0 flex items-center justify-center h-8 w-8 rounded-full bg-emerald-500 text-white font-bold mr-4">
+                        {i + 1}
+                      </span>
+                      <span className="flex-grow pt-1">{stepText}</span>
+                      <button
+                        onClick={() => handlePlayAudio(stepText)}
+                        className="ml-2 p-1 text-gray-500 hover:text-emerald-600 rounded-full"
+                      >
+                        <SpeakerWaveIcon className="w-5 h-5" />
+                      </button>
+                    </li>
+                  );
+                })}
               </ol>
             </div>
           </div>

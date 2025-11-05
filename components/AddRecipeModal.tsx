@@ -1,8 +1,8 @@
+'use client';
 
 import React, { useState, useRef } from 'react';
-import type { Recipe } from '../types';
-import * as gemini from '../services/geminiService';
-import * as fileUtils from '../utils/fileUtils';
+import type { Recipe } from '@/types';
+import * as fileUtils from '@/utils/fileUtils';
 import { XMarkIcon, DocumentTextIcon, PhotoIcon, LinkIcon, VideoCameraIcon } from './icons';
 
 interface AddRecipeModalProps {
@@ -60,25 +60,45 @@ const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ isOpen, onClose, onAddR
         }
     };
     
+    const generateRecipe = async (type: string, content: string, mimeType?: string, base64Image?: string): Promise<Partial<Recipe> | null> => {
+        try {
+            const response = await fetch('/api/recipes/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, content, mimeType, base64Image }),
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to generate recipe');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error generating recipe:', error);
+            throw error;
+        }
+    };
+
     const handleTextSubmit = () => {
         if (!text) return;
         clearLogs();
         addLog("Structuring your recipe...");
-        handleAdd(gemini.structureTextToRecipe(text, addLog));
+        handleAdd(generateRecipe('text', text));
     };
 
     const handleUrlSubmit = () => {
         if (!url) return;
         clearLogs();
         addLog("Fetching recipe from URL...");
-        handleAdd(gemini.generateRecipeFromUrl(url, addLog));
+        handleAdd(generateRecipe('url', url));
     };
-    
+
     const handleYoutubeSubmit = () => {
         if (!youtubeUrl) return;
         clearLogs();
         addLog("Generating recipe from YouTube video...");
-        handleAdd(gemini.generateRecipeFromYoutubeUrl(youtubeUrl, addLog));
+        handleAdd(generateRecipe('url', youtubeUrl));
     };
 
     const handleFileSubmit = async (file: File) => {
@@ -86,7 +106,7 @@ const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ isOpen, onClose, onAddR
         clearLogs();
         addLog(`Analyzing image...`);
         const base64 = await fileUtils.fileToBase64(file);
-        handleAdd(gemini.generateRecipeFromImage(file.type, base64, addLog));
+        handleAdd(generateRecipe('image', '', file.type, base64));
     };
 
     const tabs = [
