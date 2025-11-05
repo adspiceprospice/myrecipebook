@@ -1,5 +1,23 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { Ingredient } from '@/types';
+import {
+  RecipeExtractionError,
+  withRetry,
+  withTimeout,
+  normalizeUrl,
+  extractDomain
+} from './extraction-utils';
+import {
+  parseJsonLdRecipe,
+  parseOpenGraphTags,
+  fetchHtmlContent,
+  type ParsedRecipeData,
+} from './structured-data-parser';
+import {
+  validateRecipeData,
+  sanitizeRecipeData,
+  type ValidatedRecipeData
+} from './recipe-validation';
 
 function getAI() {
   if (!process.env.GEMINI_API_KEY) {
@@ -51,28 +69,68 @@ const parseJsonResponse = (jsonString?: string): any => {
 };
 
 export async function generateRecipeFromImage(mimeType: string, base64Image: string) {
-  const ai = getAI();
-  const imagePart = { inlineData: { mimeType, data: base64Image } };
-  const textPart = { text: "Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can't identify a specific dish, make a recipe for what you see. Format the response as JSON using the provided schema." };
+  try {
+    console.log(`📸 Starting recipe generation from image...`);
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-pro',
-    contents: { parts: [imagePart, textPart] },
-    config: { responseMimeType: "application/json", responseSchema: recipeSchema },
-  });
+    const recipeData = await withRetry(async () => {
+      const ai = getAI();
+      const imagePart = { inlineData: { mimeType, data: base64Image } };
+      const textPart = { text: "Analyze this image of a dish. Identify it and create a detailed recipe for it. If you can't identify a specific dish, make a recipe for what you see. Format the response as JSON using the provided schema." };
 
-  return parseJsonResponse(response.text);
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-2.5-pro',
+          contents: { parts: [imagePart, textPart] },
+          config: { responseMimeType: "application/json", responseSchema: recipeSchema },
+        }),
+        30000,
+        'Image analysis timeout'
+      );
+
+      return parseJsonResponse(response.text);
+    }, 2); // Retry up to 2 times
+
+    // Sanitize and validate
+    const sanitized = sanitizeRecipeData(recipeData);
+    const validated = validateRecipeData(sanitized);
+
+    console.log(`✅ Image recipe generation complete: ${validated.title}`);
+
+    return validated;
+  } catch (error) {
+    console.error('Failed to generate recipe from image:', error);
+    if (error instanceof RecipeExtractionError) {
+      throw new Error(error.message);
+    }
+    throw new Error('Failed to analyze image and generate recipe');
+  }
 }
 
 export async function structureTextToRecipe(text: string) {
-  const ai = getAI();
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: `Take the following text and structure it as a recipe. Format the response as JSON using the provided schema.\n\nText: "${text}"`,
-    config: { responseMimeType: "application/json", responseSchema: recipeSchema },
-  });
+  try {
+    return await withRetry(async () => {
+      const ai = getAI();
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-2.5-flash',
+          contents: `Take the following text and structure it as a recipe. Format the response as JSON using the provided schema.\n\nText: "${text}"`,
+          config: { responseMimeType: "application/json", responseSchema: recipeSchema },
+        }),
+        20000,
+        'Recipe structuring timeout'
+      );
 
-  return parseJsonResponse(response.text);
+      return parseJsonResponse(response.text);
+    }, 2); // Retry up to 2 times
+  } catch (error) {
+    console.error('Failed to structure text as recipe:', error);
+    throw new RecipeExtractionError(
+      'Failed to structure recipe data',
+      'PARSING_ERROR',
+      undefined,
+      error instanceof Error ? error : undefined
+    );
+  }
 }
 
 export async function generateImageForRecipe(title: string, description: string): Promise<string | null> {
@@ -115,17 +173,26 @@ Instructions:
 6. If after a thorough search you cannot find any transcript or captions for this video, you MUST return the single word: "ERROR". Do not explain why or apologize.`;
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-    const transcript = response.text?.trim();
+    const transcript = await withRetry(async () => {
+      const ai = getAI();
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-2.5-pro',
+          contents: prompt,
+          config: { tools: [{ googleSearch: {} }] },
+        }),
+        30000,
+        'YouTube transcript extraction timeout'
+      );
 
-    if (!transcript || transcript.toUpperCase() === "ERROR" || transcript.length < 100) {
-      return null;
-    }
+      const text = response.text?.trim();
+
+      if (!text || text.toUpperCase() === "ERROR" || text.length < 100) {
+        return null;
+      }
+      return text;
+    }, 2); // Retry up to 2 times
+
     return transcript;
   } catch (e) {
     console.error("Transcript fetching failed", e);
@@ -140,65 +207,222 @@ function getYoutubeVideoId(url: string): string | null {
 }
 
 export async function generateRecipeFromYoutubeUrl(url: string) {
-  const transcript = await getTranscriptFromYoutubeUrl(url);
-  if (!transcript) {
-    throw new Error("Failed to retrieve transcript from YouTube video");
-  }
+  try {
+    console.log(`🎥 Starting recipe extraction from YouTube: ${url}`);
 
-  const recipeData = await structureTextToRecipe(transcript);
-
-  let finalImageUrls: string[] = [];
-  const videoId = getYoutubeVideoId(url);
-  if (videoId) {
-    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-    finalImageUrls.push(thumbnailUrl);
-  } else {
-    const generatedImage = await generateImageForRecipe(recipeData.title || "the dish", recipeData.description || "");
-    if (generatedImage) {
-      finalImageUrls.push(generatedImage);
+    const transcript = await getTranscriptFromYoutubeUrl(url);
+    if (!transcript) {
+      throw new RecipeExtractionError(
+        "Failed to retrieve transcript from YouTube video. The video may not have captions or may not contain a recipe.",
+        'NO_RECIPE_FOUND',
+        url
+      );
     }
-  }
 
-  return { ...recipeData, imageUrls: finalImageUrls };
+    const recipeData = await structureTextToRecipe(transcript);
+
+    // Sanitize and validate
+    const sanitized = sanitizeRecipeData(recipeData);
+    const validated = validateRecipeData(sanitized);
+
+    // Get thumbnail
+    let finalImageUrls: string[] = [];
+    const videoId = getYoutubeVideoId(url);
+    if (videoId) {
+      const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+      finalImageUrls.push(thumbnailUrl);
+    } else {
+      const generatedImage = await generateImageForRecipe(
+        validated.title,
+        validated.description
+      );
+      if (generatedImage) {
+        finalImageUrls.push(generatedImage);
+      }
+    }
+
+    console.log(`✅ YouTube recipe extraction complete: ${validated.title}`);
+
+    return { ...validated, imageUrls: finalImageUrls };
+  } catch (error) {
+    if (error instanceof RecipeExtractionError) {
+      console.error(`❌ YouTube extraction failed: ${error.message}`);
+      throw new Error(error.message);
+    }
+    throw error;
+  }
 }
 
-async function getTextContentFromUrl(url: string): Promise<string | null> {
-  const prompt = `Please extract the main recipe content from the webpage at this URL: ${url}. Include the title, description, ingredients, and instructions. Return only the text of the recipe. If you cannot access the URL or find a recipe on the page, return the single word "ERROR".`;
+/**
+ * Extract recipe data from URL using multi-tier strategy:
+ * 1. Try JSON-LD structured data (fast, free, reliable)
+ * 2. Try OpenGraph meta tags (basic info)
+ * 3. Fall back to AI extraction (slow, paid, flexible)
+ */
+async function extractRecipeFromUrl(url: string): Promise<ParsedRecipeData | null> {
+  const normalizedUrl = normalizeUrl(url);
+  const domain = extractDomain(normalizedUrl);
+
+  console.log(`🔍 Extracting recipe from ${domain}...`);
 
   try {
-    const ai = getAI();
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: { tools: [{ googleSearch: {} }] },
-    });
-    const text = response.text;
+    // TIER 1: Try JSON-LD structured data
+    console.log(`📄 Trying JSON-LD structured data...`);
+    const html = await withTimeout(
+      fetchHtmlContent(normalizedUrl),
+      15000,
+      'Timeout fetching webpage'
+    );
 
-    if (!text || text.trim().toUpperCase() === "ERROR") {
+    const jsonLdRecipe = parseJsonLdRecipe(html, normalizedUrl);
+    if (jsonLdRecipe) {
+      console.log(`✅ Successfully extracted recipe using JSON-LD`);
+      return jsonLdRecipe;
+    }
+
+    // TIER 2: Try OpenGraph meta tags (partial data)
+    console.log(`📋 JSON-LD not found, trying OpenGraph tags...`);
+    const ogData = parseOpenGraphTags(html, normalizedUrl);
+
+    // If we have basic metadata from OG tags, try to enhance with AI using the HTML
+    if (ogData && ogData.title) {
+      console.log(`🤖 Found basic metadata, using AI to extract full recipe from HTML...`);
+      const textContent = extractTextFromHtml(html);
+      if (textContent) {
+        const aiRecipe = await getTextContentFromUrlWithAI(normalizedUrl, textContent);
+        if (aiRecipe) {
+          return aiRecipe;
+        }
+      }
+    }
+
+    // TIER 3: Fall back to AI extraction with Google Search
+    console.log(`🤖 No structured data found, falling back to AI extraction...`);
+    const aiRecipe = await getTextContentFromUrlWithAI(normalizedUrl);
+    if (aiRecipe) {
+      return aiRecipe;
+    }
+
+    throw new RecipeExtractionError(
+      'No recipe found on this page. Please make sure the URL contains a recipe.',
+      'NO_RECIPE_FOUND',
+      normalizedUrl
+    );
+  } catch (error) {
+    if (error instanceof RecipeExtractionError) {
+      throw error;
+    }
+
+    console.error("Recipe extraction failed:", error);
+    throw new RecipeExtractionError(
+      `Failed to extract recipe: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      'PARSING_ERROR',
+      normalizedUrl,
+      error instanceof Error ? error : undefined
+    );
+  }
+}
+
+/**
+ * Extract text content from HTML (simple text extraction for AI processing)
+ */
+function extractTextFromHtml(html: string): string | null {
+  try {
+    // Remove script and style tags
+    let text = html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ') // Remove HTML tags
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    return text.length > 100 ? text : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Use AI to extract recipe from URL or text content
+ * @param url URL to extract from
+ * @param textContent Optional pre-fetched text content
+ */
+async function getTextContentFromUrlWithAI(url: string, textContent?: string): Promise<ParsedRecipeData | null> {
+  const prompt = textContent
+    ? `Extract the recipe from this webpage text and structure it as a recipe. Text: "${textContent.substring(0, 10000)}"` // Limit text length
+    : `Please extract the main recipe content from the webpage at this URL: ${url}. Include the title, description, ingredients, and instructions. Return only the text of the recipe. If you cannot access the URL or find a recipe on the page, return the single word "ERROR".`;
+
+  try {
+    const recipeText = await withRetry(async () => {
+      const ai = getAI();
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-2.5-pro',
+          contents: prompt,
+          config: textContent ? {} : { tools: [{ googleSearch: {} }] }, // Only use Google Search if no text provided
+        }),
+        30000,
+        'AI extraction timeout'
+      );
+
+      const text = response.text;
+      if (!text || text.trim().toUpperCase() === "ERROR") {
+        return null;
+      }
+      return text;
+    }, 2); // Retry up to 2 times
+
+    if (!recipeText) {
       return null;
     }
-    return text;
+
+    // Structure the extracted text as a recipe using AI
+    const recipeData = await structureTextToRecipe(recipeText);
+    return recipeData;
   } catch (e) {
-    console.error("Page content fetching failed", e);
+    console.error("AI extraction failed", e);
     return null;
   }
 }
 
 export async function generateRecipeFromUrl(url: string) {
-  const pageText = await getTextContentFromUrl(url);
-  if (!pageText) {
-    throw new Error("Failed to retrieve content from URL");
+  try {
+    console.log(`🔗 Starting recipe extraction from URL: ${url}`);
+
+    // Extract recipe using multi-tier strategy
+    const recipeData = await extractRecipeFromUrl(url);
+    if (!recipeData) {
+      throw new RecipeExtractionError(
+        "Failed to extract recipe from URL",
+        'NO_RECIPE_FOUND',
+        url
+      );
+    }
+
+    // Sanitize and validate the extracted data
+    const sanitized = sanitizeRecipeData(recipeData);
+    const validated = validateRecipeData(sanitized);
+
+    // Generate or find images
+    let finalImageUrls: string[] = [];
+    const generatedImage = await generateImageForRecipe(
+      validated.title,
+      validated.description
+    );
+    if (generatedImage) {
+      finalImageUrls.push(generatedImage);
+    }
+
+    console.log(`✅ Recipe extraction complete: ${validated.title}`);
+
+    return { ...validated, imageUrls: finalImageUrls };
+  } catch (error) {
+    if (error instanceof RecipeExtractionError) {
+      console.error(`❌ Recipe extraction failed: ${error.message}`);
+      throw new Error(error.message);
+    }
+    throw error;
   }
-
-  const recipeData = await structureTextToRecipe(pageText);
-
-  let finalImageUrls: string[] = [];
-  const generatedImage = await generateImageForRecipe(recipeData.title || "the dish", recipeData.description || "");
-  if (generatedImage) {
-    finalImageUrls.push(generatedImage);
-  }
-
-  return { ...recipeData, imageUrls: finalImageUrls };
 }
 
 export async function adjustIngredients(ingredients: Ingredient[], originalServings: number, newServings: number) {
