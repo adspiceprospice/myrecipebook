@@ -183,6 +183,11 @@ export default function RecipeApp() {
     }
   };
 
+  const handleRecipeUpdate = (updatedRecipe: Recipe) => {
+    // Update the recipe in the local state
+    setRecipes(prev => prev.map(r => r.id === updatedRecipe.id ? updatedRecipe : r));
+  };
+
   const handleAddToShoppingList = async (recipe: Recipe, servings: number) => {
     setIsLoading({ active: true, message: `Adjusting ingredients for ${servings} servings...` });
 
@@ -231,6 +236,7 @@ export default function RecipeApp() {
             onStartAssistant={setAssistantRecipe}
             onEdit={() => setEditingRecipe(selectedRecipe)}
             onDelete={handleDeleteRecipe}
+            onRecipeUpdate={handleRecipeUpdate}
           />
         ) : null;
       case 'shoppingList':
