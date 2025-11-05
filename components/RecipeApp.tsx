@@ -126,6 +126,7 @@ export default function RecipeApp() {
           instructions: newRecipe.instructions || [],
           imageUrls: newRecipe.imageUrls || [],
           notes: newRecipe.notes || '',
+          sourceUrl: newRecipe.sourceUrl || '',
         }),
       });
 
@@ -154,6 +155,7 @@ export default function RecipeApp() {
           instructions: updatedRecipe.instructions,
           imageUrls: updatedRecipe.imageUrls,
           notes: updatedRecipe.notes || '',
+          sourceUrl: updatedRecipe.sourceUrl || '',
         }),
       });
 
