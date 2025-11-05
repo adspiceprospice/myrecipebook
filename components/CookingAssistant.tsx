@@ -161,41 +161,41 @@ const CookingAssistant: React.FC<CookingAssistantProps> = ({ recipe, onClose }) 
   }, [stopSession]);
   
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl h-[80vh] flex flex-col p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <ChefHatIcon className="w-8 h-8 text-emerald-600" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Cooking Assistant</h2>
-              <p className="text-sm text-gray-500">Now making: {recipe.title}</p>
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <ChefHatIcon className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-gray-800">Cooking Assistant</h2>
+              <p className="text-xs sm:text-sm text-gray-500 truncate">{recipe.title}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-            <XMarkIcon className="w-6 h-6 text-gray-600" />
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors flex-shrink-0">
+            <XMarkIcon className="w-5 h-5 text-gray-600" />
           </button>
         </div>
-        
-        <div className="flex-grow bg-gray-100 rounded-lg p-4 overflow-y-auto mb-4 space-y-4">
+
+        <div className="flex-1 bg-gray-50 p-3 sm:p-4 overflow-y-auto space-y-2.5 min-h-0">
           {transcriptions.map((t, index) => (
             <React.Fragment key={index}>
-              <div className="text-right"><span className="bg-blue-500 text-white rounded-lg px-3 py-2 inline-block max-w-sm">{t.user}</span></div>
-              <div className="text-left"><span className="bg-gray-300 text-gray-800 rounded-lg px-3 py-2 inline-block max-w-sm">{t.model}</span></div>
+              <div className="text-right"><span className="bg-emerald-600 text-white rounded-lg px-3 py-2 inline-block max-w-[85%] sm:max-w-sm text-sm">{t.user}</span></div>
+              <div className="text-left"><span className="bg-white border border-gray-200 text-gray-800 rounded-lg px-3 py-2 inline-block max-w-[85%] sm:max-w-sm text-sm">{t.model}</span></div>
             </React.Fragment>
           ))}
-            {currentTranscription.user && <div className="text-right"><span className="bg-blue-400 text-white rounded-lg px-3 py-2 inline-block max-w-sm opacity-80">{currentTranscription.user}</span></div>}
-            {currentTranscription.model && <div className="text-left"><span className="bg-gray-200 text-gray-800 rounded-lg px-3 py-2 inline-block max-w-sm opacity-80">{currentTranscription.model}</span></div>}
+            {currentTranscription.user && <div className="text-right"><span className="bg-emerald-500 text-white rounded-lg px-3 py-2 inline-block max-w-[85%] sm:max-w-sm opacity-70 text-sm">{currentTranscription.user}</span></div>}
+            {currentTranscription.model && <div className="text-left"><span className="bg-gray-100 border border-gray-200 text-gray-700 rounded-lg px-3 py-2 inline-block max-w-[85%] sm:max-w-sm opacity-70 text-sm">{currentTranscription.model}</span></div>}
         </div>
-        
-        <div className="flex items-center justify-center">
+
+        <div className="flex items-center justify-center p-4 sm:p-5 flex-shrink-0">
           {!isSessionActive ? (
-            <button onClick={startSession} className="flex flex-col items-center justify-center w-24 h-24 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-600 transition-all duration-300 transform hover:scale-105">
-              <MicrophoneIcon className="w-10 h-10" />
+            <button onClick={startSession} className="flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-emerald-600 text-white rounded-full shadow-lg hover:bg-emerald-700 active:scale-95 transition-all">
+              <MicrophoneIcon className="w-8 h-8 sm:w-10 sm:h-10" />
               <span className="text-xs font-semibold mt-1">START</span>
             </button>
           ) : (
-            <button onClick={stopSession} className="flex flex-col items-center justify-center w-24 h-24 bg-red-500 text-white rounded-full shadow-lg hover:bg-red-600 transition-all duration-300 transform hover:scale-105">
-              <StopCircleIcon className="w-10 h-10" />
+            <button onClick={stopSession} className="flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 bg-red-600 text-white rounded-full shadow-lg hover:bg-red-700 active:scale-95 transition-all">
+              <StopCircleIcon className="w-8 h-8 sm:w-10 sm:h-10" />
               <span className="text-xs font-semibold mt-1">STOP</span>
             </button>
           )}

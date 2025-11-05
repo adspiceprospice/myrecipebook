@@ -3,8 +3,9 @@
 @tailwind utilities;
 
 :root {
-  --primary: #22c55e;
-  --primary-dark: #16a34a;
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-light: #d1fae5;
 }
 
 body {
@@ -13,8 +14,39 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Uniform input styling */
+input[type="text"],
+input[type="url"],
+input[type="number"],
+textarea,
+select {
+  @apply px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors;
+}
+
+/* Compact button styles */
+.btn-primary {
+  @apply px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm;
+}
+
+.btn-secondary {
+  @apply px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors;
+}
+
+/* Mobile-first spacing utilities */
+.container-padding {
+  @apply px-3 py-3 sm:px-4 sm:py-4 lg:px-6 lg:py-6;
+}
+
+/* Smooth transitions */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition-duration: 150ms;
+  }
 }

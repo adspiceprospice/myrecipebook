@@ -16,36 +16,36 @@ const Header: React.FC<{
   onViewChange: (view: AppView) => void;
   shoppingListCount: number
 }> = ({ activeView, onViewChange, shoppingListCount }) => (
-  <header className="bg-white shadow-md sticky top-0 z-40">
-    <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-3">
+  <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+    <nav className="max-w-7xl mx-auto px-3 sm:px-4 flex justify-between items-center h-14">
       <div className="flex items-center gap-2">
-        <ChefHatIcon className="w-8 h-8 text-emerald-600" />
-        <h1 className="text-xl font-bold text-gray-800">My Recipe Book</h1>
+        <ChefHatIcon className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" />
+        <h1 className="text-base sm:text-lg font-bold text-gray-800">My Recipe Book</h1>
       </div>
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1 sm:gap-2">
         <button
           onClick={() => onViewChange('list')}
-          className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-sm font-medium transition-colors ${
             activeView === 'list' || activeView === 'recipe'
               ? 'bg-emerald-100 text-emerald-700'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <BookOpenIcon className="w-5 h-5" />
-          My Recipes
+          <span className="hidden sm:inline">Recipes</span>
         </button>
         <button
           onClick={() => onViewChange('shoppingList')}
-          className={`relative flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          className={`relative flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-sm font-medium transition-colors ${
             activeView === 'shoppingList'
               ? 'bg-emerald-100 text-emerald-700'
               : 'text-gray-600 hover:bg-gray-100'
           }`}
         >
           <ShoppingCartIcon className="w-5 h-5" />
-          Shopping List
+          <span className="hidden sm:inline">Shopping</span>
           {shoppingListCount > 0 && (
-            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
+            <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white">
               {shoppingListCount}
             </span>
           )}

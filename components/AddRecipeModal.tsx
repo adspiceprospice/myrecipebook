@@ -119,59 +119,59 @@ const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ isOpen, onClose, onAddR
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-bold text-gray-800">Add a New Recipe</h2>
-                    <button onClick={handleClose} className="p-2 rounded-full hover:bg-gray-200 transition-colors disabled:opacity-50" disabled={isGenerating}>
-                        <XMarkIcon className="w-6 h-6 text-gray-600" />
+        <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+                <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
+                    <h2 className="text-base sm:text-lg font-bold text-gray-800">Add Recipe</h2>
+                    <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50" disabled={isGenerating}>
+                        <XMarkIcon className="w-5 h-5 text-gray-600" />
                     </button>
                 </div>
-                <fieldset disabled={isGenerating}>
-                    <div className="p-6">
-                        <div className="border-b border-gray-200 mb-4">
-                            <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Tabs">
+                <fieldset disabled={isGenerating} className="flex-1 overflow-y-auto">
+                    <div className="px-4 py-3">
+                        <div className="border-b border-gray-200 mb-3">
+                            <nav className="-mb-px flex gap-2 overflow-x-auto scrollbar-hide" aria-label="Tabs">
                                 {tabs.map(tab => (
                                     <button key={tab.id} onClick={() => { setActiveTab(tab.id as any); clearLogs(); }}
-                                        className={`whitespace-nowrap flex items-center gap-2 py-3 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                                        <tab.icon className="w-5 h-5"/> {tab.label}
+                                        className={`whitespace-nowrap flex items-center gap-1.5 py-2 px-2 border-b-2 font-medium text-xs sm:text-sm ${activeTab === tab.id ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
+                                        <tab.icon className="w-4 h-4"/> <span className="hidden xs:inline">{tab.label}</span><span className="xs:hidden">{tab.label.replace('From ', '')}</span>
                                     </button>
                                 ))}
                             </nav>
                         </div>
 
                         {activeTab === 'text' && (
-                            <div className="space-y-3">
-                                <label htmlFor="recipe-text" className="text-sm font-medium text-gray-700">Paste your recipe text below:</label>
-                                <textarea id="recipe-text" rows={10} value={text} onChange={e => setText(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100" placeholder="e.g., 2 cups flour, 1 cup sugar... mix and bake at 350F for 20 minutes."></textarea>
-                                <button onClick={handleTextSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed">
+                            <div className="space-y-2.5">
+                                <label htmlFor="recipe-text" className="text-xs sm:text-sm font-medium text-gray-700">Paste your recipe text:</label>
+                                <textarea id="recipe-text" rows={8} value={text} onChange={e => setText(e.target.value)} className="w-full disabled:bg-gray-100" placeholder="e.g., 2 cups flour, 1 cup sugar... mix and bake at 350F for 20 minutes."></textarea>
+                                <button onClick={handleTextSubmit} className="w-full py-2 px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed transition-colors">
                                     {isGenerating ? <SpinnerInline/> : 'Generate Recipe'}
                                 </button>
                             </div>
                         )}
                         {activeTab === 'image' && (
-                            <div className="space-y-3 text-center">
-                                <p className="text-sm text-gray-600">Upload an image of a dish and let AI create the recipe for you.</p>
+                            <div className="space-y-2.5 text-center">
+                                <p className="text-xs sm:text-sm text-gray-600">Upload an image of a dish and let AI create the recipe.</p>
                                 <input type="file" ref={fileInputRef} hidden accept='image/*' onChange={(e) => e.target.files && handleFileSubmit(e.target.files[0])} />
-                                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed">
+                                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed transition-colors">
                                     {isGenerating ? <SpinnerInline/> : 'Select Image File'}
                                 </button>
                             </div>
                         )}
                         {activeTab === 'url' && (
-                            <div className="space-y-3">
-                                <label htmlFor="recipe-url" className="text-sm font-medium text-gray-700">Enter a URL to a recipe page:</label>
-                                <input type="url" id="recipe-url" value={url} onChange={e => setUrl(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100" placeholder="https://example.com/best-cookies-ever" />
-                                <button onClick={handleUrlSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed">
+                            <div className="space-y-2.5">
+                                <label htmlFor="recipe-url" className="text-xs sm:text-sm font-medium text-gray-700">Enter a URL to a recipe page:</label>
+                                <input type="url" id="recipe-url" value={url} onChange={e => setUrl(e.target.value)} className="w-full disabled:bg-gray-100" placeholder="https://example.com/best-cookies-ever" />
+                                <button onClick={handleUrlSubmit} className="w-full py-2 px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed transition-colors">
                                     {isGenerating ? <SpinnerInline/> : 'Fetch Recipe'}
                                 </button>
                             </div>
                         )}
                         {activeTab === 'youtube' && (
-                            <div className="space-y-3">
-                                <label htmlFor="youtube-url" className="text-sm font-medium text-gray-700">Enter a YouTube video URL:</label>
-                                <input type="url" id="youtube-url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full p-2 border rounded-md focus:ring-emerald-500 focus:border-emerald-500 disabled:bg-gray-100" placeholder="https://www.youtube.com/watch?v=..." />
-                                <button onClick={handleYoutubeSubmit} className="w-full py-2 px-4 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed">
+                            <div className="space-y-2.5">
+                                <label htmlFor="youtube-url" className="text-xs sm:text-sm font-medium text-gray-700">Enter a YouTube video URL:</label>
+                                <input type="url" id="youtube-url" value={youtubeUrl} onChange={e => setYoutubeUrl(e.target.value)} className="w-full disabled:bg-gray-100" placeholder="https://www.youtube.com/watch?v=..." />
+                                <button onClick={handleYoutubeSubmit} className="w-full py-2 px-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium flex items-center justify-center disabled:bg-emerald-400 disabled:cursor-not-allowed transition-colors">
                                     {isGenerating ? <SpinnerInline/> : 'Generate from YouTube'}
                                 </button>
                             </div>
@@ -180,10 +180,10 @@ const AddRecipeModal: React.FC<AddRecipeModalProps> = ({ isOpen, onClose, onAddR
                 </fieldset>
 
                 {liveLogs.length > 0 && (
-                     <div className="px-6 pb-6">
-                        <div className="bg-gray-900 text-white rounded-lg p-3 font-mono text-xs max-h-32 overflow-y-auto">
+                     <div className="px-4 pb-3 flex-shrink-0">
+                        <div className="bg-gray-900 text-white rounded-lg p-2.5 font-mono text-xs max-h-28 overflow-y-auto">
                             {liveLogs.map((log, index) => (
-                                <p key={index} className="whitespace-pre-wrap animate-fade-in">{`> ${log}`}</p>
+                                <p key={index} className="whitespace-pre-wrap">{`> ${log}`}</p>
                             ))}
                         </div>
                     </div>
