@@ -1,11 +1,12 @@
+'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 // FIX: The `LiveSession` type is not exported from `@google/genai`. It has been removed from the import.
 import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
-import type { Recipe } from '../types';
+import type { Recipe } from '@/types';
 // FIX: Added missing ChefHatIcon import.
 import { MicrophoneIcon, StopCircleIcon, XMarkIcon, ChefHatIcon } from './icons';
-import { encode, decode, decodeAudioData } from '../utils/audioUtils';
+import { encode, decode, decodeAudioData } from '@/utils/audioUtils';
 
 // FIX: Define a minimal `LiveSession` interface since the type is not exported from the library.
 interface LiveSession {
@@ -88,7 +89,7 @@ const CookingAssistant: React.FC<CookingAssistantProps> = ({ recipe, onClose }) 
             processor.onaudioprocess = (audioProcessingEvent) => {
               const inputData = audioProcessingEvent.inputBuffer.getChannelData(0);
               const pcmBlob = {
-                  data: encode(new Uint8Array(new Int16Array(inputData.map(x => x * 32768)).buffer)),
+                  data: encode(new Int16Array(inputData.map(x => x * 32768))),
                   mimeType: 'audio/pcm;rate=16000',
               };
               sessionPromise.then((session) => session.sendRealtimeInput({ media: pcmBlob }));
@@ -108,7 +109,7 @@ const CookingAssistant: React.FC<CookingAssistantProps> = ({ recipe, onClose }) 
                 setCurrentTranscription({ user: '', model: '' });
             }
 
-            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData.data;
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData && outputAudioContextRef.current) {
                 const audioBuffer = await decodeAudioData(decode(audioData), outputAudioContextRef.current, 24000, 1);
                 const source = outputAudioContextRef.current.createBufferSource();

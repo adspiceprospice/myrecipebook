@@ -5,11 +5,12 @@ import { RecipeInput } from '@/types';
 // GET /api/recipes/[id] - Get a single recipe
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const recipe = await prisma.recipe.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         ingredients: true,
         instructions: {
@@ -37,22 +38,23 @@ export async function GET(
 // PUT /api/recipes/[id] - Update a recipe
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body: RecipeInput = await request.json();
 
     // Delete existing ingredients and instructions
     await prisma.ingredient.deleteMany({
-      where: { recipeId: params.id },
+      where: { recipeId: id },
     });
     await prisma.instruction.deleteMany({
-      where: { recipeId: params.id },
+      where: { recipeId: id },
     });
 
     // Update recipe with new data
     const recipe = await prisma.recipe.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: body.title,
         description: body.description || null,
@@ -95,11 +97,12 @@ export async function PUT(
 // DELETE /api/recipes/[id] - Delete a recipe
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await prisma.recipe.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
