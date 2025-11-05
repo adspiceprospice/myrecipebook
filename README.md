@@ -76,36 +76,42 @@ An AI-powered recipe management application built with Next.js 15, Prisma ORM, a
 ## Deployment to Vercel
 
 1. **Push your code to GitHub**
+   ```bash
+   git add .
+   git commit -m "Ready for deployment"
+   git push
+   ```
 
 2. **Import project to Vercel**
    - Go to [vercel.com](https://vercel.com)
    - Click "New Project"
    - Import your GitHub repository
 
-3. **Configure environment variables**
-
-   Add these environment variables in Vercel:
-   - `DATABASE_URL`: Your PostgreSQL connection string
-   - `GEMINI_API_KEY`: Your Google Gemini API key
-
-4. **Set up Vercel Postgres (Optional)**
-
-   If you don't have a PostgreSQL database:
+3. **Set up Vercel Postgres**
    - Go to your project's Storage tab in Vercel
    - Create a Postgres database
    - The `DATABASE_URL` will be automatically added to your environment variables
+
+4. **Configure additional environment variables**
+   - In your Vercel project settings, go to Environment Variables
+   - Add: `GEMINI_API_KEY` = your Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 5. **Set up Vercel Blob Storage**
    - Go to your project's Storage tab in Vercel
    - Create a Blob store
    - The required tokens will be automatically added
 
-6. **Deploy**
+6. **Configure Build Settings (IMPORTANT)**
+   - In Vercel project Settings > General > Build & Development Settings
+   - Build Command: `npm run vercel-build` (this runs migrations then builds)
+   - OR keep default and migrations will run automatically via the `vercel-build` script
+
+7. **Deploy**
    - Vercel will automatically deploy your application
-   - Run database migrations after deployment:
-     ```bash
-     npx prisma migrate deploy
-     ```
+   - The `vercel-build` script will:
+     1. Run `prisma migrate deploy` to apply database migrations
+     2. Run `next build` to build the app
+   - Check deployment logs to ensure migrations ran successfully
 
 ## Database Schema
 
@@ -146,8 +152,10 @@ myrecipebook/
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npx prisma studio` - Open Prisma Studio
-- `npx prisma migrate dev` - Create and apply migrations
+- `npm run vercel-build` - Build command for Vercel (runs migrations + build)
+- `npm run db:migrate` - Create and apply migrations (development)
+- `npm run db:push` - Push schema changes without creating migrations
+- `npm run db:studio` - Open Prisma Studio to view/edit database
 
 ## Contributing
 
