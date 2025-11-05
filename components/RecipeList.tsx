@@ -12,16 +12,16 @@ const RecipeCard: React.FC<{ recipe: Recipe; onSelect: (id: string) => void }> =
 }) => (
   <div
     onClick={() => onSelect(recipe.id)}
-    className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer hover:shadow-xl transition-shadow duration-300 group"
+    className="bg-white rounded-lg shadow-sm hover:shadow-md overflow-hidden cursor-pointer transition-all active:scale-98 group border border-gray-100"
   >
     <img
       src={recipe.imageUrls?.[0] || placeholderImage(recipe.id)}
       alt={recipe.title}
-      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+      className="w-full h-36 sm:h-40 object-cover"
     />
-    <div className="p-4">
-      <h3 className="text-lg font-bold text-gray-800 truncate">{recipe.title}</h3>
-      <p className="text-sm text-gray-600 mt-1 h-10 overflow-hidden">{recipe.description}</p>
+    <div className="p-3">
+      <h3 className="text-sm sm:text-base font-semibold text-gray-800 truncate">{recipe.title}</h3>
+      <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">{recipe.description}</p>
     </div>
   </div>
 );
@@ -34,27 +34,27 @@ interface RecipeListProps {
 
 export default function RecipeList({ recipes, onSelectRecipe, onOpenModal }: RecipeListProps) {
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">My Recipes</h1>
+    <div className="max-w-7xl mx-auto px-3 py-3 sm:px-4 sm:py-4">
+      <div className="flex justify-between items-center mb-3 sm:mb-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-800">My Recipes</h1>
         <button
           onClick={onOpenModal}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
+          className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
         >
-          <PlusIcon /> Add Recipe
+          <PlusIcon className="w-4 h-4" /> <span className="hidden xs:inline">Add Recipe</span><span className="xs:hidden">Add</span>
         </button>
       </div>
       {recipes.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
           {recipes.map(recipe => (
             <RecipeCard key={recipe.id} recipe={recipe} onSelect={onSelectRecipe} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 bg-white rounded-lg shadow">
-          <ChefHatIcon className="mx-auto w-16 h-16 text-gray-300" />
-          <h3 className="mt-2 text-xl font-semibold text-gray-900">No recipes yet!</h3>
-          <p className="mt-1 text-sm text-gray-500">Click "Add Recipe" to get started.</p>
+        <div className="text-center py-12 sm:py-16 bg-white rounded-lg border border-gray-200">
+          <ChefHatIcon className="mx-auto w-12 h-12 sm:w-16 sm:h-16 text-gray-300" />
+          <h3 className="mt-3 text-lg sm:text-xl font-semibold text-gray-900">No recipes yet</h3>
+          <p className="mt-1 text-sm text-gray-500">Get started by adding your first recipe</p>
         </div>
       )}
     </div>

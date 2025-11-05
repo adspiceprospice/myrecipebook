@@ -94,112 +94,118 @@ const EditRecipeModal: React.FC<EditRecipeModalProps> = ({ recipe, isOpen, onClo
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col h-[90vh]">
-        <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white rounded-t-2xl z-10">
-          <h2 className="text-xl font-bold text-gray-800">Edit Recipe</h2>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200 transition-colors">
-            <XMarkIcon className="w-6 h-6 text-gray-600" />
+    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 backdrop-blur-sm">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-3xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+        <div className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-white rounded-t-2xl z-10 flex-shrink-0">
+          <h2 className="text-base sm:text-lg font-bold text-gray-800">Edit Recipe</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+            <XMarkIcon className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        <div className="flex-grow p-6 overflow-y-auto space-y-6">
+        <div className="flex-grow px-4 py-3 overflow-y-auto space-y-4">
             {/* Basic Info */}
             <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
-                <input type="text" id="title" value={editedRecipe.title} onChange={e => handleFieldChange('title', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
+                <label htmlFor="title" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input type="text" id="title" value={editedRecipe.title} onChange={e => handleFieldChange('title', e.target.value)} className="block w-full" />
             </div>
             <div>
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
-                <textarea id="description" rows={3} value={editedRecipe.description || ''} onChange={e => handleFieldChange('description', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
+                <label htmlFor="description" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="description" rows={2} value={editedRecipe.description || ''} onChange={e => handleFieldChange('description', e.target.value)} className="block w-full" />
             </div>
-             <div>
-                <label htmlFor="servings" className="block text-sm font-medium text-gray-700">Servings</label>
-                <input type="number" id="servings" value={editedRecipe.servings} onChange={e => handleFieldChange('servings', Number(e.target.value))} min="1" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                  <label htmlFor="servings" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Servings</label>
+                  <input type="number" id="servings" value={editedRecipe.servings} onChange={e => handleFieldChange('servings', Number(e.target.value))} min="1" className="block w-full" />
+              </div>
+              <div>
+                  <label htmlFor="sourceUrl" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Source URL</label>
+                  <input type="url" id="sourceUrl" value={editedRecipe.sourceUrl || ''} onChange={e => handleFieldChange('sourceUrl', e.target.value)} className="block w-full" placeholder="https://..." />
+              </div>
             </div>
             <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Your Notes</label>
-                <textarea id="notes" rows={4} value={editedRecipe.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" placeholder="e.g., 'Tried with almonds instead of walnuts, was great!'" />
-            </div>
-            <div>
-                <label htmlFor="sourceUrl" className="block text-sm font-medium text-gray-700">Source URL</label>
-                <input type="url" id="sourceUrl" value={editedRecipe.sourceUrl || ''} onChange={e => handleFieldChange('sourceUrl', e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" placeholder="https://example.com/recipe" />
+                <label htmlFor="notes" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Your Notes</label>
+                <textarea id="notes" rows={3} value={editedRecipe.notes || ''} onChange={e => handleFieldChange('notes', e.target.value)} className="block w-full" placeholder="e.g., 'Tried with almonds instead of walnuts, was great!'" />
             </div>
 
             {/* Image Gallery */}
             <div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Image Gallery</h3>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">Image Gallery</h3>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {editedRecipe.imageUrls.map((url, i) => (
                         <div key={i} className="relative group aspect-square">
                             <img src={url} alt={`Recipe image ${i+1}`} className="w-full h-full object-cover rounded-md" />
                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 rounded-md">
-                                <button title="Set as primary" onClick={() => handleSetPrimaryImage(i)} className="p-1.5 bg-white/80 rounded-full text-gray-800 hover:bg-white disabled:opacity-50" disabled={i === 0}><StarIcon className="w-4 h-4" solid={i === 0} /></button>
-                                <button title="Delete image" onClick={() => handleRemoveItem('imageUrls', i)} className="p-1.5 bg-white/80 rounded-full text-red-600 hover:bg-white"><TrashIcon className="w-4 h-4" /></button>
+                                <button title="Set as primary" onClick={() => handleSetPrimaryImage(i)} className="p-1 bg-white/90 rounded-full text-gray-800 hover:bg-white disabled:opacity-50" disabled={i === 0}><StarIcon className="w-3 h-3" solid={i === 0} /></button>
+                                <button title="Delete image" onClick={() => handleRemoveItem('imageUrls', i)} className="p-1 bg-white/90 rounded-full text-red-600 hover:bg-white"><TrashIcon className="w-3 h-3" /></button>
                             </div>
                         </div>
                     ))}
                 </div>
-                 <div className="mt-2 flex gap-2">
-                    <input type="url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="Add new image URL..." className="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm" />
-                    <button onClick={handleAddImage} className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-md hover:bg-emerald-200 text-sm font-semibold">Add</button>
-                    <button
-                      onClick={handleGenerateImage}
-                      disabled={isGeneratingImage}
-                      className="px-3 py-1 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                    >
-                      {isGeneratingImage ? (
-                        <>
-                          <span className="inline-block w-3 h-3 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></span>
-                          Generating...
-                        </>
-                      ) : (
-                        <>✨ Generate</>
-                      )}
-                    </button>
+                 <div className="mt-2 flex flex-col sm:flex-row gap-2">
+                    <input type="url" value={newImageUrl} onChange={e => setNewImageUrl(e.target.value)} placeholder="Add image URL..." className="flex-grow block w-full" />
+                    <div className="flex gap-2">
+                      <button onClick={handleAddImage} className="flex-1 sm:flex-none px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg hover:bg-emerald-200 text-xs sm:text-sm font-medium">Add</button>
+                      <button
+                        onClick={handleGenerateImage}
+                        disabled={isGeneratingImage}
+                        className="flex-1 sm:flex-none px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                      >
+                        {isGeneratingImage ? (
+                          <>
+                            <span className="inline-block w-3 h-3 border-2 border-purple-700 border-t-transparent rounded-full animate-spin"></span>
+                            <span className="hidden xs:inline">Generating...</span>
+                          </>
+                        ) : (
+                          <>✨ <span className="hidden xs:inline">Generate</span></>
+                        )}
+                      </button>
+                    </div>
                 </div>
             </div>
 
             {/* Ingredients */}
             <div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Ingredients</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">Ingredients</h3>
+                <div className="space-y-1.5">
                     {editedRecipe.ingredients.map((ing, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                            <input type="text" value={ing.quantity} onChange={e => handleDynamicChange('ingredients', i, e.target.value, 'quantity')} placeholder="Quantity" className="block w-1/3 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"/>
-                            <input type="text" value={ing.name} onChange={e => handleDynamicChange('ingredients', i, e.target.value, 'name')} placeholder="Name" className="block w-2/3 rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"/>
-                            <button onClick={() => handleMoveItem('ingredients', i, 'up')} disabled={i===0} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowUpIcon className="w-4 h-4" /></button>
-                            <button onClick={() => handleMoveItem('ingredients', i, 'down')} disabled={i===editedRecipe.ingredients.length-1} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowDownIcon className="w-4 h-4" /></button>
-                            <button onClick={() => handleRemoveItem('ingredients', i)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5" /></button>
+                        <div key={i} className="flex items-center gap-1.5">
+                            <input type="text" value={ing.quantity} onChange={e => handleDynamicChange('ingredients', i, e.target.value, 'quantity')} placeholder="Qty" className="block w-1/3"/>
+                            <input type="text" value={ing.name} onChange={e => handleDynamicChange('ingredients', i, e.target.value, 'name')} placeholder="Name" className="block flex-1"/>
+                            <div className="flex gap-0.5">
+                              <button onClick={() => handleMoveItem('ingredients', i, 'up')} disabled={i===0} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowUpIcon className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleMoveItem('ingredients', i, 'down')} disabled={i===editedRecipe.ingredients.length-1} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowDownIcon className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleRemoveItem('ingredients', i)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-3.5 h-3.5" /></button>
+                            </div>
                         </div>
                     ))}
                 </div>
-                <button onClick={() => handleAddItem('ingredients')} className="mt-2 flex items-center gap-1 text-sm text-emerald-600 font-semibold hover:text-emerald-800"><PlusIcon className="w-4 h-4"/> Add Ingredient</button>
+                <button onClick={() => handleAddItem('ingredients')} className="mt-2 flex items-center gap-1 text-xs sm:text-sm text-emerald-600 font-medium hover:text-emerald-700"><PlusIcon className="w-3.5 h-3.5"/> Add Ingredient</button>
             </div>
 
             {/* Instructions */}
             <div>
-                <h3 className="text-lg font-medium text-gray-800 mb-2">Instructions</h3>
-                <div className="space-y-2">
+                <h3 className="text-sm sm:text-base font-semibold text-gray-800 mb-2">Instructions</h3>
+                <div className="space-y-1.5">
                      {editedRecipe.instructions.map((step, i) => (
-                        <div key={i} className="flex items-start gap-2">
-                            <span className="pt-2 font-semibold text-gray-500">{i+1}.</span>
-                            <textarea rows={2} value={typeof step === 'string' ? step : step.text} onChange={e => handleDynamicChange('instructions', i, e.target.value)} className="flex-grow block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"/>
-                             <div className="flex flex-col">
-                                <button onClick={() => handleMoveItem('instructions', i, 'up')} disabled={i===0} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowUpIcon className="w-4 h-4" /></button>
-                                <button onClick={() => handleMoveItem('instructions', i, 'down')} disabled={i===editedRecipe.instructions.length-1} className="p-1 text-gray-500 hover:text-gray-800 disabled:opacity-30"><ArrowDownIcon className="w-4 h-4" /></button>
-                             </div>
-                            <button onClick={() => handleRemoveItem('instructions', i)} className="p-1 text-red-500 hover:text-red-700 mt-1"><TrashIcon className="w-5 h-5" /></button>
+                        <div key={i} className="flex items-start gap-1.5">
+                            <span className="pt-2 text-xs font-semibold text-gray-500 w-5">{i+1}.</span>
+                            <textarea rows={2} value={typeof step === 'string' ? step : step.text} onChange={e => handleDynamicChange('instructions', i, e.target.value)} className="flex-1 block w-full"/>
+                            <div className="flex flex-col gap-0.5">
+                              <button onClick={() => handleMoveItem('instructions', i, 'up')} disabled={i===0} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowUpIcon className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleMoveItem('instructions', i, 'down')} disabled={i===editedRecipe.instructions.length-1} className="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"><ArrowDownIcon className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleRemoveItem('instructions', i)} className="p-1 text-red-500 hover:text-red-700"><TrashIcon className="w-3.5 h-3.5" /></button>
+                            </div>
                         </div>
                     ))}
                 </div>
-                <button onClick={() => handleAddItem('instructions')} className="mt-2 flex items-center gap-1 text-sm text-emerald-600 font-semibold hover:text-emerald-800"><PlusIcon className="w-4 h-4"/> Add Step</button>
+                <button onClick={() => handleAddItem('instructions')} className="mt-2 flex items-center gap-1 text-xs sm:text-sm text-emerald-600 font-medium hover:text-emerald-700"><PlusIcon className="w-3.5 h-3.5"/> Add Step</button>
             </div>
         </div>
 
-        <div className="p-4 bg-gray-50 border-t sticky bottom-0 rounded-b-2xl flex justify-end gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50">Cancel</button>
-            <button onClick={handleSave} className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 border border-transparent rounded-md shadow-sm hover:bg-emerald-700">Save Changes</button>
+        <div className="px-4 py-3 bg-gray-50 border-t sticky bottom-0 rounded-b-2xl flex gap-2 flex-shrink-0">
+            <button onClick={onClose} className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancel</button>
+            <button onClick={handleSave} className="flex-1 sm:flex-none px-4 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors">Save Changes</button>
         </div>
       </div>
     </div>
